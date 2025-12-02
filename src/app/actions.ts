@@ -1,6 +1,6 @@
 "use server";
 
-import { PDFParse } from "pdf-parse";
+import pdf from "pdf-parse";
 import { supabase } from "@/lib/supabase";
 
 export async function parsePdf(formData: FormData) {
@@ -11,8 +11,6 @@ export async function parsePdf(formData: FormData) {
     }
 
     // Check book limit (Max 5)
-    // Note: Since we don't have auth yet, this is a global limit or per-session if we had session ID.
-    // For now, we'll just check total books in DB as a simple safeguard.
     const { count, error: countError } = await supabase
         .from('books')
         .select('*', { count: 'exact', head: true });
@@ -30,19 +28,16 @@ export async function parsePdf(formData: FormData) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const parser = new PDFParse({ data: buffer });
-        const result = await parser.getText();
-        await parser.destroy();
+        const data = await pdf(buffer);
 
         // Save to Supabase
-        const { data, error } = await supabase
+        const { data: bookData, error } = await supabase
             .from('books')
             .insert([
                 {
                     title: file.name.replace(/\.pdf$/i, ''), // Remove .pdf extension
-                    author: 'Desconocido', // result.info?.Author || 'Desconocido',
-                    text_content: result.text,
-                    // created_at is automatic
+                    author: 'Desconocido', // data.info?.Author || 'Desconocido',
+                    text_content: data.text,
                 }
             ])
             .select()
@@ -54,11 +49,9 @@ export async function parsePdf(formData: FormData) {
         }
 
         return {
-            id: data.id,
-            text: result.text,
-            // info: result.metadata,
-            // metadata: result.metadata,
-            numPages: result.pages ? result.pages.length : 0,
+            id: bookData.id,
+            text: data.text,
+            numPages: data.numpages,
         };
     } catch (error: any) {
         console.error("Error parsing PDF:", error);
