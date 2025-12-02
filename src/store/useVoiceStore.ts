@@ -22,17 +22,19 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
     initializeVoices: () => {
         const updateVoices = () => {
             // Filter for specific high-quality Spanish voices
-            const preferredVoiceNames = [
+            // Using partial matching to catch different name variations
+            const preferredVoiceKeywords = [
                 'Google español',
-                'Google español de Estados Unidos',
-                'Microsoft Helena Online (Natural) - Spanish (Spain)',
-                'Microsoft Sabina Online (Natural) - Spanish (Mexico)'
+                'Helena',
+                'Sabina',
+                'Monica',
+                'Mónica'
             ];
 
             const allVoices = window.speechSynthesis.getVoices();
             const availableVoices = allVoices.filter(voice =>
                 voice.lang.startsWith('es') &&
-                preferredVoiceNames.some(name => voice.name.includes(name) || voice.name === name)
+                preferredVoiceKeywords.some(keyword => voice.name.includes(keyword))
             );
 
             // If no preferred voices found, fall back to all Spanish voices
