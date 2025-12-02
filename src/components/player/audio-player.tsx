@@ -175,34 +175,19 @@ export function AudioPlayer() {
                                     }
                                 }}
                             >
-                                {voices
-                                    .filter(v => v.lang.startsWith('es') && (v.name.includes("Google") || v.name.includes("Monica") || v.name.includes("Paulina")))
-                                    .sort((a, b) => {
-                                        // Prioritize known high-quality voices
-                                        const priority = ["Google", "Monica", "Paulina"];
-                                        const aScore = priority.findIndex(p => a.name.includes(p));
-                                        const bScore = priority.findIndex(p => b.name.includes(p));
+                                {voices.map((voice) => {
+                                    let description = voice.name;
+                                    if (voice.name.includes("Monica") || voice.name.includes("Mónica")) description = "Mónica (España - Natural)";
+                                    else if (voice.name.includes("Paulina")) description = "Paulina (México - Natural)";
+                                    else if (voice.name.includes("Google")) description = `Google (${voice.lang.split('-')[1] || 'ES'})`;
+                                    else description = `${voice.name.replace('Microsoft', '').replace('Online', '').trim()} (${voice.lang})`;
 
-                                        if (aScore !== -1 && bScore !== -1) return aScore - bScore;
-                                        if (aScore !== -1) return -1;
-                                        if (bScore !== -1) return 1;
-                                        return 0;
-                                    })
-                                    .map((voice) => {
-                                        let description = voice.name;
-                                        if (voice.name.includes("Monica")) description = "Mónica (España - Natural)";
-                                        else if (voice.name.includes("Paulina")) description = "Paulina (México - Natural)";
-                                        else if (voice.name.includes("Jorge")) description = "Jorge (España - Masculina)";
-                                        else if (voice.name.includes("Diego")) description = "Diego (Argentina - Masculina)";
-                                        else if (voice.name.includes("Google")) description = `Google (${voice.lang.split('-')[1] || 'ES'})`;
-                                        else description = `${voice.name.replace('Microsoft', '').replace('Online', '').trim()} (${voice.lang})`;
-
-                                        return (
-                                            <option key={voice.name} value={voice.name}>
-                                                {description}
-                                            </option>
-                                        );
-                                    })}
+                                    return (
+                                        <option key={voice.name} value={voice.name}>
+                                            {description}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
 
