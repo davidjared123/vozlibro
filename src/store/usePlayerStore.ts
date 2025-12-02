@@ -15,7 +15,7 @@ export interface Book {
 interface PlayerState {
     currentBook: Book | null;
     isPlaying: boolean;
-    setCurrentBook: (book: Book) => void;
+    setCurrentBook: (book: Book | null) => void;
     setIsPlaying: (isPlaying: boolean) => void;
     play: (book: Book) => void;
     pause: () => void;

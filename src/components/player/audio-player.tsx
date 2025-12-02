@@ -8,6 +8,7 @@ import {
     SkipForward,
     Volume2,
     Maximize2,
+    X,
 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useTextToSpeech } from "@/hooks/use-text-to-speech";
@@ -111,6 +112,17 @@ export function AudioPlayer() {
                 <div className="flex-1 flex items-center justify-between px-4 md:px-6">
                     {/* Book Info */}
                     <div className="flex items-center space-x-4 w-1/3">
+                        <button
+                            onClick={() => {
+                                setIsPlaying(false);
+                                cancel();
+                                setCurrentBook(null);
+                            }}
+                            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                            title="Cerrar reproductor"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
                         <div className="h-12 w-8 bg-muted rounded hidden sm:block flex-shrink-0 overflow-hidden">
                             {currentBook.coverUrl ? (
                                 <img src={currentBook.coverUrl} alt={currentBook.title} className="w-full h-full object-cover" />
