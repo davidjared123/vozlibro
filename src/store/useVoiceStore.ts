@@ -23,13 +23,13 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
         const updateVoices = () => {
             // Filter for specific high-quality Spanish voices
             // Using partial matching to catch different name variations
+            // Filter for the 4 specific voices requested by user
             const preferredVoiceKeywords = [
                 'Google español',
-                'Helena',
-                'Sabina',
+                'Google US',
                 'Monica',
                 'Mónica',
-                'Samantha'
+                'Paulina'
             ];
 
             const allVoices = window.speechSynthesis.getVoices();
