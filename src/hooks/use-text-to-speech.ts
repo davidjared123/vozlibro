@@ -2,16 +2,16 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useVoiceStore } from "@/store/useVoiceStore";
 
 interface UseTextToSpeechProps {
     onEnd?: () => void;
 }
 
 export function useTextToSpeech({ onEnd }: UseTextToSpeechProps = {}) {
-    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const { voices, selectedVoice, initializeVoices } = useVoiceStore();
     const [speaking, setSpeaking] = useState(false);
     const [paused, setPaused] = useState(false);
-    const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
     const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
     const [charIndex, setCharIndex] = useState(0);
     const [rate, setRate] = useState(1);
@@ -25,47 +25,15 @@ export function useTextToSpeech({ onEnd }: UseTextToSpeechProps = {}) {
     const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
     useEffect(() => {
-        const updateVoices = () => {
-            const availableVoices = window.speechSynthesis.getVoices();
-            setVoices(availableVoices);
-
-            // Try to restore saved voice
-            const savedVoiceName = localStorage.getItem('voz-libro-voice');
-            if (savedVoiceName) {
-                const savedVoice = availableVoices.find(v => v.name === savedVoiceName);
-                if (savedVoice) {
-                    setSelectedVoice(savedVoice);
-                    return;
-                }
-            }
-
-            // Default to first Spanish voice if available
-            const esVoice = availableVoices.find((v) => v.lang.startsWith("es"));
-            if (esVoice) setSelectedVoice(esVoice);
-        };
-
-        updateVoices();
-        window.speechSynthesis.onvoiceschanged = updateVoices;
-
-        return () => {
-            window.speechSynthesis.onvoiceschanged = null;
-            window.speechSynthesis.cancel();
-        };
-    }, []);
-
-    // Save selected voice to localStorage
-    useEffect(() => {
-        if (selectedVoice) {
-            localStorage.setItem('voz-libro-voice', selectedVoice.name);
-        }
-    }, [selectedVoice]);
+        initializeVoices();
+    }, [initializeVoices]);
 
     useEffect(() => {
         if (speaking && !paused) {
             window.speechSynthesis.cancel();
             speakChunk(currentChunkIndexRef.current);
         }
-    }, [rate, volume]);
+    }, [rate, volume, selectedVoice]);
 
     const speakChunk = useCallback((index: number) => {
         if (index >= chunksRef.current.length || isCancelledRef.current) {
@@ -216,7 +184,10 @@ export function useTextToSpeech({ onEnd }: UseTextToSpeechProps = {}) {
         charIndex,
         currentChunkIndex,
         totalChunks: chunksRef.current.length,
-        setSelectedVoice,
+        // setSelectedVoice is now handled by the store, but we might want to expose it if needed, 
+        // though the UI should probably use the store directly. 
+        // For backward compatibility or if this hook is the main interface:
+        setSelectedVoice: useVoiceStore.getState().setSelectedVoice,
         speak,
         pause,
         resume,

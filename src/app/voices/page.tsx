@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { VoiceCard } from "@/components/voices/voice-card";
+import { useVoiceStore } from "@/store/useVoiceStore";
 
 const MOCK_VOICES = [
     {
@@ -37,7 +38,11 @@ const MOCK_VOICES = [
 ];
 
 export default function VoicesPage() {
-    const [selectedVoice, setSelectedVoice] = useState("1");
+    const { voices, selectedVoice, setSelectedVoice, initializeVoices } = useVoiceStore();
+
+    useEffect(() => {
+        initializeVoices();
+    }, [initializeVoices]);
 
     const handlePreview = (id: string) => {
         console.log("Preview voice:", id);
@@ -54,40 +59,32 @@ export default function VoicesPage() {
             </div>
 
             <div className="space-y-6">
-                <div>
-                    <h2 className="text-xl font-semibold mb-4 flex items-center">
-                        Premium
-                        <span className="ml-2 text-xs bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded-full border border-yellow-500/20">
-                            Recomendado
-                        </span>
-                    </h2>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {MOCK_VOICES.filter((v) => v.isPremium).map((voice) => (
-                            <VoiceCard
-                                key={voice.id}
-                                {...voice}
-                                isSelected={selectedVoice === voice.id}
-                                onSelect={setSelectedVoice}
-                                onPreview={handlePreview}
-                            />
-                        ))}
+                {voices.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-10">
+                        No se encontraron voces disponibles.
                     </div>
-                </div>
-
-                <div>
-                    <h2 className="text-xl font-semibold mb-4">Estándar</h2>
+                ) : (
                     <div className="grid gap-4 md:grid-cols-2">
-                        {MOCK_VOICES.filter((v) => !v.isPremium).map((voice) => (
-                            <VoiceCard
-                                key={voice.id}
-                                {...voice}
-                                isSelected={selectedVoice === voice.id}
-                                onSelect={setSelectedVoice}
-                                onPreview={handlePreview}
-                            />
-                        ))}
+                        {voices
+                            .filter(v => v.lang.startsWith('es') && (v.name.includes("Google") || v.name.includes("Monica") || v.name.includes("Paulina")))
+                            .map((voice) => (
+                                <VoiceCard
+                                    key={voice.name}
+                                    id={voice.name}
+                                    name={voice.name}
+                                    category={voice.lang}
+                                    description={`Voz del sistema (${voice.lang})`}
+                                    isPremium={false}
+                                    isSelected={selectedVoice?.name === voice.name}
+                                    onSelect={() => {
+                                        console.log("Selecting voice:", voice.name);
+                                        setSelectedVoice(voice);
+                                    }}
+                                    onPreview={handlePreview}
+                                />
+                            ))}
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

@@ -171,26 +171,15 @@ export function AudioPlayer() {
                                 onChange={(e) => {
                                     const voice = voices.find((v) => v.name === e.target.value);
                                     if (voice) {
-                                        // Save current position to store before switching
-                                        setCurrentBook({ ...currentBook, last_position: currentChunkIndex } as any);
-
                                         setSelectedVoice(voice);
-                                        // If playing, restart with new voice
-                                        if (isPlaying) {
-                                            cancel();
-                                            setTimeout(() => {
-                                                setIsPlaying(true);
-                                                // The effect will pick up the change and start speaking from currentBook.last_position
-                                            }, 100);
-                                        }
                                     }
                                 }}
                             >
                                 {voices
-                                    .filter(v => v.lang.startsWith('es'))
+                                    .filter(v => v.lang.startsWith('es') && (v.name.includes("Google") || v.name.includes("Monica") || v.name.includes("Paulina")))
                                     .sort((a, b) => {
                                         // Prioritize known high-quality voices
-                                        const priority = ["Google", "Premium", "Monica", "Paulina", "Jorge", "Diego"];
+                                        const priority = ["Google", "Monica", "Paulina"];
                                         const aScore = priority.findIndex(p => a.name.includes(p));
                                         const bScore = priority.findIndex(p => b.name.includes(p));
 
@@ -199,7 +188,6 @@ export function AudioPlayer() {
                                         if (bScore !== -1) return 1;
                                         return 0;
                                     })
-                                    .slice(0, 6) // Show top 6 relevant voices
                                     .map((voice) => {
                                         let description = voice.name;
                                         if (voice.name.includes("Monica")) description = "Mónica (España - Natural)";

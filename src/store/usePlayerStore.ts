@@ -33,6 +33,7 @@ export const usePlayerStore = create<PlayerState>()(
         }),
         {
             name: 'voz-libro-player-storage',
+            partialize: (state) => ({ currentBook: state.currentBook }), // Don't persist isPlaying to avoid auto-play issues
         }
     )
 );
