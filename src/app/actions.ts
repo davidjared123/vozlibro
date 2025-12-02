@@ -1,6 +1,6 @@
 "use server";
 
-import pdf from "pdf-parse";
+const pdf = require("pdf-parse");
 import { supabase } from "@/lib/supabase";
 
 export async function parsePdf(formData: FormData) {
