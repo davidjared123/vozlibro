@@ -66,7 +66,7 @@ export default function VoicesPage() {
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2">
                         {voices
-                            .filter(v => v.lang.startsWith('es') && (v.name.includes("Google") || v.name.includes("Monica") || v.name.includes("Paulina")))
+                            .filter(v => v.lang.startsWith('es'))
                             .map((voice) => (
                                 <VoiceCard
                                     key={voice.name}
