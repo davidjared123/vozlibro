@@ -28,7 +28,8 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
                 'Helena',
                 'Sabina',
                 'Monica',
-                'Mónica'
+                'Mónica',
+                'Samantha'
             ];
 
             const allVoices = window.speechSynthesis.getVoices();
