@@ -12,7 +12,11 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
     const isPublicPage = pathname === '/landing' || pathname === '/login' || pathname === '/signup';
 
     if (isPublicPage) {
-        return <>{children}</>;
+        return (
+            <div className="w-full min-h-screen overflow-y-auto">
+                {children}
+            </div>
+        );
     }
 
     return (
