@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/layout/sidebar";
-import { MobileNav } from "@/components/layout/mobile-nav";
-import { AudioPlayer } from "@/components/player/audio-player";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,12 +31,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto pb-32 md:pb-24 bg-background">
+          <ConditionalLayout>
             {children}
-          </main>
-          <AudioPlayer />
-          <MobileNav />
+          </ConditionalLayout>
         </AuthProvider>
       </body>
     </html>

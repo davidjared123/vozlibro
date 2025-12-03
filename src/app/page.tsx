@@ -7,15 +7,27 @@ import Link from "next/link";
 import { supabaseClient } from "@/lib/supabase-client";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [books, setBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const router = useRouter();
+
+  // Redirect to landing if not authenticated
+  useEffect(() => {
+    if (!user && !loading) {
+      router.push("/landing");
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
     const fetchBooks = async () => {
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabaseClient
         .from('books')
@@ -33,6 +45,10 @@ export default function Home() {
 
     fetchBooks();
   }, [user]);
+
+  if (!user) {
+    return null; // Will redirect to landing
+  }
 
   return (
     <ProtectedRoute>
