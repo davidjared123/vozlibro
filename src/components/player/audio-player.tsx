@@ -113,9 +113,17 @@ export function AudioPlayer() {
                     {/* Book Info */}
                     <div className="flex items-center space-x-4 w-1/3">
                         <button
-                            onClick={() => {
+                            onClick={async () => {
+                                // Save current progress to database before closing
+                                if (currentBook && totalChunks > 0) {
+                                    const progressPercent = Math.round((currentChunkIndex / totalChunks) * 100);
+                                    await updateBookProgress(currentBook.id, currentChunkIndex, progressPercent);
+                                    console.log('Progress saved before closing:', currentChunkIndex, progressPercent);
+                                }
+                                // Pause and stop playback
                                 setIsPlaying(false);
                                 cancel();
+                                // Clear the player (this will hide it)
                                 setCurrentBook(null);
                             }}
                             className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
