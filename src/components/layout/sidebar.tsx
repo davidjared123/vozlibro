@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Library, Mic2, Settings, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserMenu } from "./UserMenu";
 
 const navigation = [
     { name: "Biblioteca", href: "/", icon: Library },
@@ -45,6 +46,9 @@ export function Sidebar() {
                     );
                 })}
             </nav>
+            <div className="p-4 border-t">
+                <UserMenu />
+            </div>
         </div>
     );
 }

@@ -3,17 +3,22 @@
 const pdf = require("pdf-parse");
 import { supabase } from "@/lib/supabase";
 
-export async function parsePdf(formData: FormData) {
+export async function parsePdf(formData: FormData, userId: string) {
     const file = formData.get("file") as File;
 
     if (!file) {
         throw new Error("No file provided");
     }
 
-    // Check book limit (Max 5)
+    if (!userId) {
+        throw new Error("User not authenticated");
+    }
+
+    // Check book limit (Max 5 per user)
     const { count, error: countError } = await supabase
         .from('books')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
 
     if (countError) {
         console.error("Error checking book limit:", countError);
@@ -30,7 +35,7 @@ export async function parsePdf(formData: FormData) {
 
         const data = await pdf(buffer);
 
-        // Save to Supabase
+        // Save to Supabase with user_id
         const { data: bookData, error } = await supabase
             .from('books')
             .insert([
@@ -38,6 +43,7 @@ export async function parsePdf(formData: FormData) {
                     title: file.name.replace(/\.pdf$/i, ''), // Remove .pdf extension
                     author: 'Desconocido', // data.info?.Author || 'Desconocido',
                     text_content: data.text,
+                    user_id: userId,
                 }
             ])
             .select()

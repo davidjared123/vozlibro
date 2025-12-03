@@ -4,6 +4,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { AudioPlayer } from "@/components/player/audio-player";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,12 +32,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col md:flex-row overflow-hidden`}
         suppressHydrationWarning
       >
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto pb-32 md:pb-24 bg-background">
-          {children}
-        </main>
-        <AudioPlayer />
-        <MobileNav />
+        <AuthProvider>
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto pb-32 md:pb-24 bg-background">
+            {children}
+          </main>
+          <AudioPlayer />
+          <MobileNav />
+        </AuthProvider>
       </body>
     </html>
   );
