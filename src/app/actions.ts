@@ -1,6 +1,5 @@
 "use server";
 
-const pdf = require("pdf-parse");
 import { supabase } from "@/lib/supabase";
 
 export async function parsePdf(formData: FormData, userId: string) {
@@ -30,6 +29,11 @@ export async function parsePdf(formData: FormData, userId: string) {
     }
 
     try {
+        // Dynamic import to ensure Server Component compatibility
+        // pdf-parse has different exports for CommonJS vs ES modules
+        const pdfParse = await import("pdf-parse");
+        const pdf = (pdfParse as any).default || pdfParse;
+
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
