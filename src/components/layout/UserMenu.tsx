@@ -13,8 +13,12 @@ export function UserMenu() {
     if (!user) return null;
 
     const handleSignOut = async () => {
+        setIsOpen(false);
         await signOut();
-        router.push("/landing");
+        // Small delay to ensure state is cleared
+        setTimeout(() => {
+            router.push("/landing");
+        }, 100);
     };
 
     return (
