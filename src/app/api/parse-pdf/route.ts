@@ -45,14 +45,37 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Dynamic import of pdf-parse
-        const pdfParse = await import("pdf-parse");
-        const pdf = (pdfParse as any).default || pdfParse;
+        // Use pdfjs-dist legacy build for Node.js compatibility
+        const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
         const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        const uint8Array = new Uint8Array(arrayBuffer);
 
-        const data = await pdf(buffer);
+        // Load the PDF document
+        const loadingTask = pdfjsLib.getDocument({
+            data: uint8Array,
+            useSystemFonts: true,
+            standardFontDataUrl: "https://unpkg.com/pdfjs-dist@4.0.379/standard_fonts/",
+        });
+
+        const pdfDocument = await loadingTask.promise;
+        const numPages = pdfDocument.numPages;
+
+        // Extract text from all pages
+        let fullText = '';
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            const page = await pdfDocument.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items
+                .map((item: any) => item.str)
+                .join(' ');
+            fullText += pageText + '\n';
+        }
+
+        const data = {
+            text: fullText,
+            numpages: numPages
+        };
 
         // Save to Supabase with user_id
         const { data: bookData, error } = await supabase
