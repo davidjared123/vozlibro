@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, FileText, BookOpen, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parsePdf } from "../actions";
+
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -41,9 +41,22 @@ export default function UploadPage() {
                 if (file.type === "application/pdf") {
                     const formData = new FormData();
                     formData.append("file", file);
+                    formData.append("userId", user.id);
 
                     setStatus(`Procesando ${file.name}...`);
-                    const result = await parsePdf(formData, user.id);
+
+                    // Use API route instead of Server Action
+                    const response = await fetch("/api/parse-pdf", {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Error al procesar el PDF");
+                    }
+
+                    const result = await response.json();
                     console.log("PDF Parsed:", result);
                 } else {
                     console.warn("Unsupported file type for processing:", file.type);
