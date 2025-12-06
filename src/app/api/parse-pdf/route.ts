@@ -127,9 +127,10 @@ export async function POST(request: NextRequest) {
                         const gap = text.x - expectedStart;
 
                         // Threshold for space. 
-                        // If gap is small (< 0.4 roughly), it's likely kerning/same word.
-                        // If gap is larger, it's a space.
-                        if (gap > 0.4) {
+                        // Reduced from 0.4 to 0.1 to avoid merging separate words (e.g. "ElPrincipito").
+                        // Intra-word gaps (kerning) are usually usually extremely small (< 0.05).
+                        // Word spaces are usually larger (> 0.2).
+                        if (gap > 0.1) {
                             fullText += ' ';
                         }
                     }
