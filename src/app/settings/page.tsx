@@ -6,6 +6,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { User, Lock, Upload, Loader2, Check, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabase-client";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
     const { user } = useAuth();
@@ -172,8 +173,8 @@ export default function SettingsPage() {
 
                     {imageStatus && (
                         <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${imageStatus.type === "success"
-                                ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                                : "bg-red-500/10 text-red-600 dark:text-red-400"
+                            ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                            : "bg-red-500/10 text-red-600 dark:text-red-400"
                             }`}>
                             {imageStatus.type === "success" ? (
                                 <Check className="h-4 w-4" />
@@ -242,8 +243,8 @@ export default function SettingsPage() {
 
                         {passwordStatus && (
                             <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${passwordStatus.type === "success"
-                                    ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                                    : "bg-red-500/10 text-red-600 dark:text-red-400"
+                                ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                                : "bg-red-500/10 text-red-600 dark:text-red-400"
                                 }`}>
                                 {passwordStatus.type === "success" ? (
                                     <Check className="h-4 w-4" />
@@ -264,7 +265,111 @@ export default function SettingsPage() {
                         </button>
                     </form>
                 </div>
+
+                {/* Danger Zone - Delete Account */}
+                <div className="border border-red-500/50 rounded-xl p-6 space-y-4">
+                    <div className="flex items-center gap-2">
+                        <X className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        <h2 className="text-xl font-semibold text-red-600 dark:text-red-400">Zona de Peligro</h2>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <h3 className="font-medium">Eliminar Cuenta</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, asegúrate de que realmente quieres hacer esto.
+                            </p>
+                        </div>
+
+                        <DeleteAccountButton />
+                    </div>
+                </div>
             </div>
         </ProtectedRoute>
+    );
+}
+
+function DeleteAccountButton() {
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [confirmText, setConfirmText] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
+    const router = useRouter();
+
+    const handleDelete = async () => {
+        if (confirmText !== "ELIMINAR") return;
+
+        setIsDeleting(true);
+
+        try {
+            const response = await fetch("/api/delete-account", {
+                method: "DELETE",
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Error al eliminar la cuenta");
+            }
+
+            // Redirect to landing page after successful deletion
+            router.push("/landing");
+        } catch (error) {
+            console.error("Error deleting account:", error);
+            alert(error instanceof Error ? error.message : "Error al eliminar la cuenta");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    if (!showConfirm) {
+        return (
+            <button
+                onClick={() => setShowConfirm(true)}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            >
+                Eliminar mi cuenta
+            </button>
+        );
+    }
+
+    return (
+        <div className="space-y-4 p-4 bg-red-500/10 rounded-lg border border-red-500/50">
+            <div className="space-y-2">
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                    ⚠️ Esta acción es permanente e irreversible
+                </p>
+                <p className="text-sm text-muted-foreground">
+                    Se eliminarán todos tus libros, configuraciones y datos. Para confirmar, escribe <strong>ELIMINAR</strong> en el campo de abajo:
+                </p>
+            </div>
+
+            <input
+                type="text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="Escribe ELIMINAR"
+                className="w-full px-4 py-2 border border-red-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-background"
+            />
+
+            <div className="flex gap-2">
+                <button
+                    onClick={handleDelete}
+                    disabled={confirmText !== "ELIMINAR" || isDeleting}
+                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    {isDeleting && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {isDeleting ? "Eliminando..." : "Confirmar eliminación"}
+                </button>
+                <button
+                    onClick={() => {
+                        setShowConfirm(false);
+                        setConfirmText("");
+                    }}
+                    disabled={isDeleting}
+                    className="px-4 py-2 border rounded-lg font-medium hover:bg-accent transition-colors disabled:opacity-50"
+                >
+                    Cancelar
+                </button>
+            </div>
+        </div>
     );
 }
