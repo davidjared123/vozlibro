@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,7 +9,6 @@ export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
         const file = formData.get("file") as File;
-        const userId = formData.get("userId") as string;
 
         if (!file) {
             return NextResponse.json(
@@ -17,15 +17,38 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (!userId) {
+        const cookieStore = await cookies();
+
+        const supabaseServer = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() {
+                        return cookieStore.getAll();
+                    },
+                    setAll(cookiesToSet) {
+                        cookiesToSet.forEach(({ name, value, options }) => {
+                            cookieStore.set(name, value, options);
+                        });
+                    },
+                },
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
+
+        if (authError || !user) {
             return NextResponse.json(
                 { error: "User not authenticated" },
                 { status: 401 }
             );
         }
 
+        const userId = user.id;
+
         // Check book limit (Max 5 per user)
-        const { count, error: countError } = await supabase
+        const { count, error: countError } = await supabaseServer
             .from('books')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId);
@@ -112,7 +135,7 @@ export async function POST(request: NextRequest) {
         };
 
         // Save to Supabase with user_id
-        const { data: bookData, error } = await supabase
+        const { data: bookData, error } = await supabaseServer
             .from('books')
             .insert([
                 {

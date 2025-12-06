@@ -36,7 +36,7 @@ export default function LandingPage() {
                             </Link>
                             <Link
                                 href="/signup"
-                                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                                className="hidden md:block px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
                             >
                                 Comenzar gratis
                             </Link>
@@ -66,7 +66,7 @@ export default function LandingPage() {
                         </Link>
                         <Link
                             href="/login"
-                            className="px-8 py-4 border rounded-lg text-lg font-medium hover:bg-accent transition-colors"
+                            className="hidden md:inline-flex px-8 py-4 border rounded-lg text-lg font-medium hover:bg-accent transition-colors"
                         >
                             Iniciar sesión
                         </Link>

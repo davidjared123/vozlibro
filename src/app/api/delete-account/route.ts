@@ -1,14 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
-import { supabaseClient } from "@/lib/supabase-client";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function DELETE(request: NextRequest) {
     try {
+        const cookieStore = await cookies();
+
+        const supabaseServer = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() {
+                        return cookieStore.getAll();
+                    },
+                    setAll(cookiesToSet) {
+                        cookiesToSet.forEach(({ name, value, options }) => {
+                            cookieStore.set(name, value, options);
+                        });
+                    },
+                },
+            }
+        );
+
         // Get the current user from the session
-        const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+        const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
 
         if (authError || !user) {
             return NextResponse.json(
@@ -20,7 +39,7 @@ export async function DELETE(request: NextRequest) {
         const userId = user.id;
 
         // Delete user's books
-        const { error: booksError } = await supabase
+        const { error: booksError } = await supabaseServer
             .from('books')
             .delete()
             .eq('user_id', userId);
@@ -37,7 +56,7 @@ export async function DELETE(request: NextRequest) {
         if (user.user_metadata?.avatar_url) {
             try {
                 const avatarPath = user.user_metadata.avatar_url.split('/').slice(-2).join('/');
-                await supabaseClient.storage
+                await supabaseServer.storage
                     .from('profile-images')
                     .remove([avatarPath]);
             } catch (error) {
@@ -47,7 +66,8 @@ export async function DELETE(request: NextRequest) {
         }
 
         // Call the delete_user RPC function
-        const { error: deleteError } = await supabase.rpc('delete_user', {
+        // Note: delete_user RPC must be defined in your database with security definer to allow users to delete themselves
+        const { error: deleteError } = await supabaseServer.rpc('delete_user', {
             user_id: userId
         });
 
@@ -60,7 +80,7 @@ export async function DELETE(request: NextRequest) {
         }
 
         // Sign out the user
-        await supabaseClient.auth.signOut();
+        await supabaseServer.auth.signOut();
 
         return NextResponse.json({ success: true });
     } catch (error: any) {
