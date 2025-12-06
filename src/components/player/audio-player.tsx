@@ -16,7 +16,7 @@ import { cn, estimateDuration, calculateReadingTime, formatTime } from "@/lib/ut
 
 import { updateBookProgress } from "@/app/actions";
 
-import { supabase } from "@/lib/supabase";
+import { supabaseClient } from "@/lib/supabase-client";
 
 export function AudioPlayer() {
     const { currentBook, isPlaying, setIsPlaying, setCurrentBook, pause: pauseStore, play: playStore } = usePlayerStore();
@@ -28,7 +28,7 @@ export function AudioPlayer() {
     useEffect(() => {
         if (currentBook?.id) {
             const fetchProgress = async () => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('books')
                     .select('last_position, progress_percent')
                     .eq('id', currentBook.id)
