@@ -45,18 +45,53 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Use unpdf - specifically designed for serverless environments
-        const { extractText, getDocumentProxy } = await import("unpdf");
+        // Use pdf2json - works well in serverless, no browser APIs
+        const PDFParser = (await import("pdf2json")).default;
 
         const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
-        // Get document proxy and extract text
-        const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer));
-        const { text, totalPages } = await extractText(pdf, { mergePages: true });
+        // Parse PDF using pdf2json
+        const pdfParser = new PDFParser();
+
+        const pdfData = await new Promise<any>((resolve, reject) => {
+            pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+                resolve(pdfData);
+            });
+
+            pdfParser.on("pdfParser_dataError", (error: any) => {
+                reject(error);
+            });
+
+            pdfParser.parseBuffer(buffer);
+        });
+
+        // Extract text from parsed PDF
+        let fullText = '';
+        let numPages = 0;
+
+        if (pdfData && pdfData.Pages) {
+            numPages = pdfData.Pages.length;
+
+            for (const page of pdfData.Pages) {
+                if (page.Texts) {
+                    for (const text of page.Texts) {
+                        if (text.R) {
+                            for (const run of text.R) {
+                                if (run.T) {
+                                    fullText += decodeURIComponent(run.T) + ' ';
+                                }
+                            }
+                        }
+                    }
+                    fullText += '\n';
+                }
+            }
+        }
 
         const data = {
-            text: text,
-            numpages: totalPages
+            text: fullText.trim() || "No se pudo extraer texto del PDF",
+            numpages: numPages
         };
 
         // Save to Supabase with user_id
