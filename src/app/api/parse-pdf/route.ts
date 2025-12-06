@@ -89,8 +89,25 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Clean up the extracted text
+        fullText = fullText
+            // Remove excessive tabs and spaces
+            .replace(/\t+/g, ' ')
+            .replace(/ {2,}/g, ' ')
+            // Remove spaces between individual letters (common in PDFs)
+            .replace(/(\w) (\w)/g, '$1$2')
+            // Restore spaces after punctuation
+            .replace(/([.,;:!?])(\w)/g, '$1 $2')
+            // Clean up multiple newlines
+            .replace(/\n{3,}/g, '\n\n')
+            // Trim each line
+            .split('\n')
+            .map(line => line.trim())
+            .join('\n')
+            .trim();
+
         const data = {
-            text: fullText.trim() || "No se pudo extraer texto del PDF",
+            text: fullText || "No se pudo extraer texto del PDF",
             numpages: numPages
         };
 
