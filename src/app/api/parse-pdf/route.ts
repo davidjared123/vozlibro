@@ -93,22 +93,55 @@ export async function POST(request: NextRequest) {
         let fullText = '';
         let numPages = 0;
 
-        if (pdfData && pdfData.Pages) {
-            numPages = pdfData.Pages.length;
+        for (const page of pdfData.Pages) {
+            if (page.Texts) {
+                // Sort texts by Y then X to ensure reading order (pdf2json usually does this but good to be safe)
+                // page.Texts.sort((a: any, b: any) => (Math.abs(a.y - b.y) < 1) ? a.x - b.x : a.y - b.y);
 
-            for (const page of pdfData.Pages) {
-                if (page.Texts) {
-                    for (const text of page.Texts) {
-                        if (text.R) {
-                            for (const run of text.R) {
-                                if (run.T) {
-                                    fullText += decodeURIComponent(run.T) + ' ';
-                                }
+                let lastY = -1;
+                let lastX = -1;
+                let lastW = 0;
+
+                for (const text of page.Texts) {
+                    // Decode text content first
+                    let textContent = "";
+                    if (text.R) {
+                        for (const run of text.R) {
+                            if (run.T) {
+                                textContent += decodeURIComponent(run.T);
                             }
                         }
                     }
-                    fullText += '\n';
+
+                    if (!textContent) continue;
+
+                    // Check for new line
+                    // units in pdf2json are roughly 1/32th of an inch? Gaps are usually small.
+                    // If Y difference is significant (> 1 unit), it's a new line
+                    if (lastY !== -1 && Math.abs(text.y - lastY) > 1) {
+                        fullText += '\n';
+                    }
+                    // If same line, check X gap for space
+                    else if (lastX !== -1) {
+                        const expectedStart = lastX + lastW;
+                        const gap = text.x - expectedStart;
+
+                        // Threshold for space. 
+                        // If gap is small (< 0.4 roughly), it's likely kerning/same word.
+                        // If gap is larger, it's a space.
+                        if (gap > 0.4) {
+                            fullText += ' ';
+                        }
+                    }
+
+                    fullText += textContent;
+
+                    lastY = text.y;
+                    lastX = text.x;
+                    // Width logic might need adjustment based on font, but `w` is usually provided
+                    lastW = text.w || 0;
                 }
+                fullText += '\n'; // End of page
             }
         }
 
