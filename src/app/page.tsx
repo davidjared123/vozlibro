@@ -14,28 +14,28 @@ export default function Home() {
   const { user } = useAuth();
 
   useEffect(() => {
-    const fetchBooks = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabaseClient
-        .from('books')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error("Error fetching books:", JSON.stringify(error, null, 2));
-      } else {
-        setBooks(data || []);
-      }
-      setLoading(false);
-    };
-
     fetchBooks();
   }, [user]);
+
+  const fetchBooks = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabaseClient
+      .from('books')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching books:", JSON.stringify(error, null, 2));
+    } else {
+      setBooks(data || []);
+    }
+    setLoading(false);
+  };
 
   return (
     <ProtectedRoute>
@@ -61,7 +61,7 @@ export default function Home() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <BookGrid books={books} />
+          <BookGrid books={books} onBookDeleted={fetchBooks} />
         )}
       </div>
     </ProtectedRoute>

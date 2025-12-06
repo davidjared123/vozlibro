@@ -6,10 +6,11 @@ import { usePlayerStore, Book } from "@/store/usePlayerStore";
 import { estimateDuration } from "@/lib/utils";
 
 interface BookGridProps {
-    books: any[]; // Using any[] for now to match the Supabase return type, but ideally should be typed
+    books: any[];
+    onBookDeleted?: () => void;
 }
 
-export function BookGrid({ books }: BookGridProps) {
+export function BookGrid({ books, onBookDeleted }: BookGridProps) {
     const play = usePlayerStore((state) => state.play);
 
     return (
@@ -18,6 +19,7 @@ export function BookGrid({ books }: BookGridProps) {
                 books.map((book) => (
                     <BookCard
                         key={book.id}
+                        id={book.id}
                         title={book.title}
                         author={book.author || 'Desconocido'}
                         progress={book.progress_percent || 0}
@@ -29,6 +31,7 @@ export function BookGrid({ books }: BookGridProps) {
                             text_content: book.text_content,
                             last_position: book.last_position,
                         })}
+                        onDelete={onBookDeleted}
                     />
                 ))
             ) : (
