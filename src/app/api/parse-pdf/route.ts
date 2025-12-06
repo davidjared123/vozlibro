@@ -45,36 +45,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Use pdfjs-dist legacy build for Node.js compatibility
-        const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+        // Use unpdf - specifically designed for serverless environments
+        const { extractText, getDocumentProxy } = await import("unpdf");
 
         const arrayBuffer = await file.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
 
-        // Load the PDF document
-        const loadingTask = pdfjsLib.getDocument({
-            data: uint8Array,
-            useSystemFonts: true,
-            standardFontDataUrl: "https://unpkg.com/pdfjs-dist@4.0.379/standard_fonts/",
-        });
-
-        const pdfDocument = await loadingTask.promise;
-        const numPages = pdfDocument.numPages;
-
-        // Extract text from all pages
-        let fullText = '';
-        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-            const page = await pdfDocument.getPage(pageNum);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items
-                .map((item: any) => item.str)
-                .join(' ');
-            fullText += pageText + '\n';
-        }
+        // Get document proxy and extract text
+        const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer));
+        const { text, totalPages } = await extractText(pdf, { mergePages: true });
 
         const data = {
-            text: fullText,
-            numpages: numPages
+            text: text,
+            numpages: totalPages
         };
 
         // Save to Supabase with user_id
