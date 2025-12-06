@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
@@ -11,32 +10,32 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        // Get user from cookies
+        // Create Supabase client with cookies for authentication
         const cookieStore = await cookies();
-        const accessToken = cookieStore.get('sb-qngzkhqlpyogzlsytezn-auth-token');
 
-        if (!accessToken) {
+        const supabaseServer = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() {
+                        return cookieStore.getAll();
+                    },
+                    setAll(cookiesToSet) {
+                        cookiesToSet.forEach(({ name, value, options }) => {
+                            cookieStore.set(name, value, options);
+                        });
+                    },
+                },
+            }
+        );
+
+        // Get the authenticated user
+        const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
+
+        if (authError || !user) {
             return NextResponse.json(
                 { error: "User not authenticated" },
-                { status: 401 }
-            );
-        }
-
-        // Parse the auth token
-        let userId: string;
-        try {
-            const tokenData = JSON.parse(accessToken.value);
-            userId = tokenData.user?.id;
-
-            if (!userId) {
-                return NextResponse.json(
-                    { error: "Invalid authentication token" },
-                    { status: 401 }
-                );
-            }
-        } catch (e) {
-            return NextResponse.json(
-                { error: "Failed to parse authentication token" },
                 { status: 401 }
             );
         }
@@ -44,7 +43,7 @@ export async function DELETE(
         const { id: bookId } = await params;
 
         // Verify the book belongs to the user before deleting
-        const { data: book, error: fetchError } = await supabase
+        const { data: book, error: fetchError } = await supabaseServer
             .from('books')
             .select('user_id')
             .eq('id', bookId)
@@ -57,7 +56,7 @@ export async function DELETE(
             );
         }
 
-        if (book.user_id !== userId) {
+        if (book.user_id !== user.id) {
             return NextResponse.json(
                 { error: "Unauthorized to delete this book" },
                 { status: 403 }
@@ -65,7 +64,7 @@ export async function DELETE(
         }
 
         // Delete the book
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await supabaseServer
             .from('books')
             .delete()
             .eq('id', bookId);
