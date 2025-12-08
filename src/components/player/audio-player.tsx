@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Play,
     Pause,
@@ -24,6 +24,11 @@ export function AudioPlayer() {
         onEnd: () => setIsPlaying(false),
     });
 
+    const currentChunkIndexRef = useRef(currentChunkIndex);
+    useEffect(() => {
+        currentChunkIndexRef.current = currentChunkIndex;
+    }, [currentChunkIndex]);
+
     // Sync with DB on mount/book change to ensure we have the latest progress (e.g. from another device)
     useEffect(() => {
         if (currentBook?.id) {
@@ -35,18 +40,70 @@ export function AudioPlayer() {
                     .single();
 
                 if (data && !error) {
-                    // If DB has a position and it's different from ours, update ours
-                    // We prioritize DB if it's ahead, or maybe just always sync to DB on load?
-                    // Let's trust DB on initial load of the component if we are not currently playing.
-                    if (!speaking && data.last_position !== currentBook.last_position) {
-                        console.log("Syncing from DB:", data.last_position);
-                        setCurrentBook({ ...currentBook, last_position: data.last_position, progress_percent: data.progress_percent } as any);
+                    // Get fresh state
+                    const state = usePlayerStore.getState();
+                    const freshBook = state.currentBook;
+
+                    const dbPos = data.last_position || 0;
+                    const localPos = freshBook?.last_position || 0;
+                    const currentIdx = currentChunkIndexRef.current;
+
+                    console.log(`Sync Check - Local: ${localPos}, DB: ${dbPos}, CurrentIdx: ${currentIdx}`);
+
+                    // Use DB position if it's different and we are just starting playback
+                    // This handles cases where local state is stale (e.g. from BookGrid) or start-from-zero bugs
+                    const isJustStarting = Math.abs(currentIdx - localPos) < 20; // 20 chunks tolerance
+
+                    if (dbPos !== localPos && isJustStarting) {
+                        console.log("Syncing from DB (correcting stale state):", dbPos);
+                        setCurrentBook({ ...freshBook, last_position: dbPos, progress_percent: data.progress_percent } as any);
+
+                        // Restart playback at correct position if we are already speaking
+                        // or if we are supposed to be speaking
+                        if (speaking || isPlaying) {
+                            console.log("Restarting playback at DB position:", dbPos);
+                            speak(freshBook?.text_content || "", dbPos);
+                        }
                     }
                 }
             };
             fetchProgress();
         }
-    }, [currentBook?.id, setCurrentBook, speaking]);
+        // Only run when book ID changes.
+    }, [currentBook?.id, setCurrentBook, speak, isPlaying, speaking]);
+
+    // Handle browser close/page reload
+    // Ref to track latest state for cleanup/events without triggering re-renders
+    const stateRef = useRef({ currentBook, currentChunkIndex, totalChunks });
+    useEffect(() => {
+        stateRef.current = { currentBook, currentChunkIndex, totalChunks };
+    }, [currentBook, currentChunkIndex, totalChunks]);
+
+    // Handle browser close, page reload, and component unmount (saving progress)
+    useEffect(() => {
+        const saveProgress = () => {
+            const { currentBook, currentChunkIndex, totalChunks } = stateRef.current;
+            if (currentBook && totalChunks > 0) {
+                const progressPercent = Math.round((currentChunkIndex / totalChunks) * 100);
+                // Fire and forget call to save progress
+                updateBookProgress(currentBook.id, currentChunkIndex, progressPercent);
+                console.log("Saved progress on clean/unload:", currentChunkIndex);
+            }
+        };
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            saveProgress();
+            // Modern browsers often ignore custom messages, but standard practice:
+            // e.returnValue = ''; 
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            saveProgress(); // Ensure we save when component unmounts or book changes
+        };
+    }, [currentBook?.id]); // Re-run setup only when book changes (to ensure we save the PREVIOUS book on change)
 
     // Save progress periodically
     useEffect(() => {
