@@ -26,7 +26,12 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
                 'Google US',
                 'Monica',
                 'Mónica',
-                'Paulina'
+                'Paulina',
+                'network',
+                'tpd',
+                'sfs',
+                'Voz 1',
+                'Voice 1',
             ];
 
             const allVoices = window.speechSynthesis.getVoices();
@@ -34,17 +39,29 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
             // Get all Spanish voices
             const spanishVoices = allVoices.filter(voice => voice.lang.startsWith('es'));
 
-            // Sort voices: Google first, then preferred keywords, then others
+            // Helper to check if a voice is likely a high-quality/Google voice
+            const isGoogleOrPremium = (voice: SpeechSynthesisVoice) => {
+                const name = voice.name || '';
+                const uri = voice.voiceURI || '';
+                return name.includes('Google') ||
+                    name.includes('network') ||
+                    name.includes('tpd') ||
+                    uri.includes('Google') ||
+                    uri.includes('network') ||
+                    uri.includes('tpd');
+            };
+
+            // Sort voices: Google/Premium first, then preferred keywords, then others
             const sortedVoices = spanishVoices.sort((a, b) => {
                 const aName = a.name;
                 const bName = b.name;
 
-                // Check if voices are Google voices
-                const aIsGoogle = aName.includes('Google');
-                const bIsGoogle = bName.includes('Google');
+                // Check for Google/Premium status
+                const aIsPremium = isGoogleOrPremium(a);
+                const bIsPremium = isGoogleOrPremium(b);
 
-                if (aIsGoogle && !bIsGoogle) return -1;
-                if (!aIsGoogle && bIsGoogle) return 1;
+                if (aIsPremium && !bIsPremium) return -1;
+                if (!aIsPremium && bIsPremium) return 1;
 
                 // Check for other preferred keywords
                 const aIndex = preferredVoiceKeywords.findIndex(k => aName.includes(k));
